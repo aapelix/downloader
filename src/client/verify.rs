@@ -1,6 +1,5 @@
+use chksum::sha1;
 use std::path::PathBuf;
-
-use chksum::{hash::sha1::Digest, prelude::HashDigest, Chksum};
 
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
 pub enum VerifyStatus {
@@ -27,22 +26,17 @@ impl std::fmt::Display for VerifyStatus {
     }
 }
 
-pub fn verify_file(hash: &str, path: PathBuf) -> VerifyStatus {
-    if let Ok(mut file) = std::fs::OpenOptions::new().read(true).open(&path) {
-        return match file.chksum(chksum::prelude::HashAlgorithm::SHA1) {
-            Ok(digest) => match Digest::try_from(hash) {
-                Ok(expected) => {
-                    if digest == HashDigest::SHA1(expected) {
-                        VerifyStatus::Ok
-                    } else {
-                        VerifyStatus::Failed
-                    }
-                }
-                Err(_) => VerifyStatus::Failed,
-            },
-            Err(_) => VerifyStatus::Failed,
-        };
+pub fn verify_file(expected_hash: &str, path: PathBuf) -> VerifyStatus {
+    // Try to compute the SHA-1 hash of the file
+    match sha1::chksum(&path) {
+        Ok(digest) => {
+            // Compare with the expected hash
+            if digest.to_hex_lowercase() == expected_hash.to_lowercase() {
+                VerifyStatus::Ok
+            } else {
+                VerifyStatus::Failed
+            }
+        }
+        Err(_) => VerifyStatus::Failed,
     }
-
-    VerifyStatus::Failed
 }

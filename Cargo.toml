@@ -1,10 +1,10 @@
 [package]
-name = "mc_downloader"
+name = "downloader_mc"
 version = "0.1.0"
 edition = "2021"
 description = "A library for downloading Minecraft assets and libraries."
 license = "MIT"
-repository = "https://github.com/minecraft-rs/downloader"
+repository = "https://github.com/aapelix/downloader"
 include = ["/src", "/examples"]
 
 [dependencies]

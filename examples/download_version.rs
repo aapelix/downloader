@@ -8,7 +8,7 @@ use std::{
     },
 };
 
-use mc_downloader::prelude::{ClientDownloader, DownloadVersion, Reporter};
+use downloader_mc::prelude::{ClientDownloader, DownloadVersion, Reporter};
 use pbr::ProgressBar;
 
 struct ProgressTrack {

@@ -48,6 +48,8 @@ pub trait DownloadVersion {
         _progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError>;
 
+    fn create_profiles_json(&self, _game_path: &PathBuf) -> Result<(), ClientDownloaderError>;
+
     fn download_by_manifest(
         &self,
         _manifest: &Manifest,

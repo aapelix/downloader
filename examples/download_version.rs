@@ -23,7 +23,7 @@ fn main() {
     // from the command line as first parameter
     let args = args().collect::<Vec<String>>();
     let default_path = "./.minecraft".to_string();
-    let default_version = "1.19.4".to_string();
+    let default_version = "1.21.5".to_string();
     let path = args.get(1).unwrap_or(&default_path);
     let version = args.get(2).unwrap_or(&default_version);
     match ClientDownloader::new() {

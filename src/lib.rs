@@ -1,5 +1,6 @@
 pub mod client;
 pub mod error;
+pub mod json_profiles;
 pub mod launcher_manifest;
 pub mod manifest;
 

@@ -1,4 +1,5 @@
 use crate::error::{ClientDownloaderError, DownloadError};
+use crate::json_profiles::ProfileJson;
 use crate::launcher_manifest::{LauncherManifest, LauncherManifestVersion};
 use crate::manifest::Manifest;
 use reqwest::blocking::Client;
@@ -108,7 +109,18 @@ impl DownloadVersion for ClientDownloader {
             std::fs::write(manifest_path, response_str)?;
         }
 
+        self.create_profiles_json(game_path).unwrap();
         self.download_by_manifest(&manifest, game_path, version_path, progress)
+    }
+
+    fn create_profiles_json(&self, game_path: &PathBuf) -> Result<(), ClientDownloaderError> {
+        let profile_json = ProfileJson::default();
+
+        let profile_json = serde_json::to_string_pretty(&profile_json).unwrap();
+        let profile_json_path = game_path.join("launcher_profiles.json");
+        std::fs::write(&profile_json_path, profile_json).unwrap();
+
+        Ok(())
     }
 
     fn download_by_manifest(
@@ -230,6 +242,8 @@ impl DownloadVersion for ClientDownloader {
                     .collect::<Vec<DownloadData>>(),
             );
         }
+
+        self.create_profiles_json(game_path).unwrap();
 
         let results = DownloaderService::new(game_path.parent().unwrap().to_path_buf())
             .with_downloads(downloads)

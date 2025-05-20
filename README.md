@@ -1,3 +1,5 @@
+## Forked from minecraft-rs/downloader. This crate adds features like fabric, forge etc. launchers, linux support and more
+
 # MC Downloader
 
 Download minecraft client and libraries from rust.
@@ -8,7 +10,7 @@ Download the client and libraries:
 
 ```rust
 let path = "./.minecraft".to_string();
-let version = "1.19.4".to_string();
+let version = "1.21.5".to_string();
 
 match ClientDownloader::new() {
     Ok(downloader) => {
@@ -19,6 +21,8 @@ match ClientDownloader::new() {
                 &PathBuf::from(path),
                 None,
                 None,
+                Some(Launcher::Fabric),
+                Some("0.16.14"),
                 None,
             )
             .unwrap();

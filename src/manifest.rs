@@ -189,8 +189,8 @@ fn maven_to_path(coordinate: &str) -> String {
     let artifact = parts[1];
     let version = parts[2];
     format!(
-        "{}/{}/{}/{}/{}-{}.jar",
-        group, artifact, version, artifact, artifact, version
+        "{}/{}/{}/{}-{}.jar",
+        group, artifact, version, artifact, version
     )
 }
 

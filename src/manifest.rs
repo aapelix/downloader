@@ -70,6 +70,43 @@ pub struct FabricManifestLibrary {
     pub size: Option<u64>,
 }
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Rules {
+    pub action: String,
+    pub features: Option<Features>,
+    pub os: Option<Os>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Features {
+    pub is_demo_user: Option<bool>,
+    pub has_custom_resolution: Option<bool>,
+    pub is_quick_play_realms: Option<bool>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Os {
+    pub arch: Option<String>,
+    pub name: Option<String>,
+    pub version: Option<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Arguments {
+    pub game: Vec<JvmArgument>,
+    pub jvm: Vec<JvmArgument>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum JvmArgument {
+    String(String),
+    Struct {
+        rules: Vec<Rules>,
+        value: serde_json::Value,
+    },
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum VersionType {
@@ -82,6 +119,7 @@ pub enum VersionType {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Manifest {
+    pub arguments: Arguments,
     pub asset_index: ManifestAssetIndex,
     pub assets: String,
     pub compliance_level: i8,
@@ -100,6 +138,7 @@ pub struct Manifest {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct FabricManifest {
+    pub arguments: Arguments,
     pub inherits_from: String,
     pub id: String,
     pub libraries: Vec<FabricManifestLibrary>,
@@ -154,7 +193,17 @@ pub fn manifest_from_fabric(
     let mut combined_libraries = fabric_libraries;
     combined_libraries.extend(base_manifest.libraries.clone());
 
+    let mut combined_game_args = base_manifest.arguments.game.clone();
+    combined_game_args.extend(fabric_manifest.arguments.game);
+
+    let mut combined_jvm_args = base_manifest.arguments.jvm.clone();
+    combined_jvm_args.extend(fabric_manifest.arguments.jvm);
+
     Ok(Manifest {
+        arguments: Arguments {
+            game: combined_game_args,
+            jvm: combined_jvm_args,
+        },
         libraries: combined_libraries,
         main_class: fabric_manifest.main_class,
         release_time: fabric_manifest.release_time,

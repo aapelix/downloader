@@ -11,6 +11,7 @@ pub struct ManifestAssetIndex {
     pub id: String,
     pub sha1: String,
     pub size: i32,
+    #[serde(rename = "totalSize")]
     pub total_size: i32,
     pub url: String,
 }
@@ -19,6 +20,7 @@ pub struct ManifestAssetIndex {
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct ManifestComponent {
     pub component: String,
+    #[serde(rename = "majorVersion")]
     pub major_version: i8,
 }
 
@@ -99,6 +101,7 @@ pub struct Arguments {
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(untagged)]
+#[serde(rename_all(deserialize = "camelCase"))]
 pub enum JvmArgument {
     String(String),
     Struct {
@@ -116,19 +119,47 @@ pub enum VersionType {
     OldAlpha,
 }
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct Logging {
+    pub client: ClientLogging,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct ClientLogging {
+    pub argument: String,
+    pub file: ClientLogFile,
+    #[serde(rename = "type")]
+    pub log_type: String,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct ClientLogFile {
+    pub id: String,
+    pub sha1: String,
+    pub size: u64,
+    pub url: String,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
 pub struct Manifest {
     pub arguments: Arguments,
+    #[serde(rename = "assetIndex")]
     pub asset_index: ManifestAssetIndex,
     pub assets: String,
+    #[serde(rename = "complianceLevel")]
     pub compliance_level: i8,
     pub downloads: ManifestDownloads,
     pub id: String,
+    #[serde(rename = "javaVersion")]
     pub java_version: ManifestComponent,
     pub libraries: Vec<ManifestLibrary>,
+    pub logging: Logging,
+    #[serde(rename = "mainClass")]
     pub main_class: String,
+    #[serde(rename = "minimumLauncherVersion")]
     pub minimum_launcher_version: i8,
+    #[serde(rename = "releaseTime")]
     pub release_time: String,
     pub time: String,
     #[serde(rename = "type")]

@@ -36,6 +36,7 @@ fn main() {
                 .download_version(
                     version,
                     &PathBuf::from(path),
+                    &PathBuf::from("./base".to_string()),
                     None,
                     None,
                     Some(Launcher::Fabric),

@@ -107,15 +107,15 @@ impl DownloadVersion for ClientDownloader {
         &self,
         version_id: &str,
         game_path: &PathBuf,
+        base_path: &PathBuf,
         manifest_path: Option<&PathBuf>,
         version_path: Option<&PathBuf>,
         launcher: Option<Launcher>,
         launcher_id: Option<&str>,
         progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError> {
-        let version = game_path.clone().join("versions").join(version_id);
         let manifest_path = manifest_path
-            .unwrap_or(&version.join(format!("{}.json", version_id)))
+            .unwrap_or(&game_path.join("manifest.json"))
             .clone();
 
         let client = Client::new();
@@ -146,7 +146,7 @@ impl DownloadVersion for ClientDownloader {
         std::fs::write(manifest_path, manifest_json)?;
 
         self.create_profiles_json(game_path).unwrap();
-        self.download_by_manifest(&manifest, game_path, version_path, progress)
+        self.download_by_manifest(&manifest, game_path, base_path, version_path, progress)
     }
 
     fn setup_fabric(
@@ -183,17 +183,19 @@ impl DownloadVersion for ClientDownloader {
         &self,
         manifest: &Manifest,
         game_path: &PathBuf,
+        base_bath: &PathBuf,
         version_path: Option<&PathBuf>,
         progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError> {
         let version_path = version_path
             .unwrap_or(
-                &game_path
+                &base_bath
                     .join("versions")
                     .join(manifest.clone().id)
                     .join(format!("{}.jar", manifest.id)),
             )
             .clone();
+
         std::fs::create_dir_all(&version_path.parent().unwrap())?;
 
         let client = Client::new();
@@ -217,7 +219,7 @@ impl DownloadVersion for ClientDownloader {
 
         // Add asset index
         {
-            let mut path = game_path.clone();
+            let mut path = base_bath.clone();
             path.push("assets");
             path.push("indexes");
             path.push(format!("{}.json", manifest.asset_index.id));
@@ -236,7 +238,7 @@ impl DownloadVersion for ClientDownloader {
 
         // Add assets
         {
-            let mut path = game_path.clone();
+            let mut path = base_bath.clone();
             path.push("assets");
 
             let mut objects_path = path.clone();
@@ -275,7 +277,7 @@ impl DownloadVersion for ClientDownloader {
 
         // Add libraries to download
         {
-            let mut path = game_path.to_path_buf();
+            let mut path = base_bath.to_path_buf();
             path.push("libraries");
             downloads.extend(
                 manifest
@@ -301,7 +303,7 @@ impl DownloadVersion for ClientDownloader {
 
         self.create_profiles_json(game_path).unwrap();
 
-        let results = DownloaderService::new(game_path.parent().unwrap().to_path_buf())
+        let results = DownloaderService::new(base_bath.parent().unwrap().to_path_buf())
             .with_downloads(downloads)
             .run(progress)
             .unwrap();

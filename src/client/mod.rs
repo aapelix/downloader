@@ -43,6 +43,7 @@ pub trait DownloadVersion {
         &self,
         _version_id: &str,
         _game_path: &PathBuf,
+        _base_path: &PathBuf,
         _manifest_path: Option<&PathBuf>,
         _version_path: Option<&PathBuf>,
         _launcher: Option<Launcher>,
@@ -63,6 +64,7 @@ pub trait DownloadVersion {
         &self,
         _manifest: &Manifest,
         _game_path: &PathBuf,
+        _base_path: &PathBuf,
         _version_path: Option<&PathBuf>,
         _progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError>;

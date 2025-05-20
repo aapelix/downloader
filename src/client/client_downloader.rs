@@ -1,7 +1,8 @@
 use crate::error::{ClientDownloaderError, DownloadError};
 use crate::json_profiles::ProfileJson;
-use crate::launcher_manifest::{LauncherManifest, LauncherManifestVersion};
+use crate::launcher_manifest::{FabricLoaderManifest, LauncherManifest, LauncherManifestVersion};
 use crate::manifest::Manifest;
+use crate::prelude::{manifest_from_fabric, FabricManifest};
 use reqwest::blocking::Client;
 use serde_json::Value;
 
@@ -13,6 +14,14 @@ use super::{
 
 pub struct ClientDownloader {
     pub main_manifest: LauncherManifest,
+}
+
+pub enum Launcher {
+    Vanilla,
+    Fabric,
+    Forge,
+    NeoForge,
+    Quilt,
 }
 
 impl ClientDownloader {
@@ -34,6 +43,22 @@ impl ClientDownloader {
 
     pub fn get_list_versions(&self) -> Vec<LauncherManifestVersion> {
         self.main_manifest.versions.clone()
+    }
+
+    pub fn get_list_fabric_loader_versions(
+        &self,
+        game_version: &str,
+    ) -> Result<Vec<FabricLoaderManifest>, ClientDownloaderError> {
+        let client = Client::new();
+        let response = client
+            .get(format!(
+                "https://meta.fabricmc.net/v2/versions/loader/{}/",
+                game_version
+            ))
+            .send()?;
+
+        let data: Vec<FabricLoaderManifest> = serde_json::from_reader(response)?;
+        Ok(data)
     }
 
     pub fn get_version(&self, id: &str) -> Option<&LauncherManifestVersion> {
@@ -84,6 +109,8 @@ impl DownloadVersion for ClientDownloader {
         game_path: &PathBuf,
         manifest_path: Option<&PathBuf>,
         version_path: Option<&PathBuf>,
+        launcher: Option<Launcher>,
+        launcher_id: Option<&str>,
         progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError> {
         let version = game_path.clone().join("versions").join(version_id);
@@ -100,17 +127,46 @@ impl DownloadVersion for ClientDownloader {
 
         let version = version_option.unwrap();
         let response = client.get(&version.url).send()?;
-        let manifest: Manifest = response.json()?;
-        {
-            let response = client.get(&version.url).send()?;
-            let response_str = response.text()?;
-            std::fs::create_dir_all(&game_path)?;
-            std::fs::create_dir_all(&manifest_path.parent().unwrap())?;
-            std::fs::write(manifest_path, response_str)?;
+        let mut manifest: Manifest = response.json()?;
+
+        match launcher.unwrap_or(Launcher::Vanilla) {
+            Launcher::Fabric => {
+                println!("Setuping fabric");
+
+                manifest = self
+                    .setup_fabric(version_id, launcher_id.unwrap(), &mut manifest)
+                    .unwrap();
+            }
+            _ => {}
         }
+
+        let manifest_json = serde_json::to_string_pretty(&manifest)?;
+        std::fs::create_dir_all(&game_path)?;
+        std::fs::create_dir_all(&manifest_path.parent().unwrap())?;
+        std::fs::write(manifest_path, manifest_json)?;
 
         self.create_profiles_json(game_path).unwrap();
         self.download_by_manifest(&manifest, game_path, version_path, progress)
+    }
+
+    fn setup_fabric(
+        &self,
+        version_id: &str,
+        launcher_id: &str,
+        base_manifest: &mut Manifest,
+    ) -> Result<Manifest, ClientDownloaderError> {
+        let client = Client::new();
+        let response = client
+            .get(format!(
+                "https://meta.fabricmc.net/v2/versions/loader/{version_id}/{launcher_id}/profile/json"
+            ))
+            .send()?;
+
+        let data: FabricManifest = serde_json::from_reader(response)?;
+
+        let manifest =
+            manifest_from_fabric(data, base_manifest).expect("Failed to setup fabric manifest");
+        Ok(manifest)
     }
 
     fn create_profiles_json(&self, game_path: &PathBuf) -> Result<(), ClientDownloaderError> {

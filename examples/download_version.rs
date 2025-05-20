@@ -8,7 +8,10 @@ use std::{
     },
 };
 
-use downloader_mc::prelude::{ClientDownloader, DownloadVersion, Reporter};
+use downloader_mc::{
+    client::Launcher,
+    prelude::{ClientDownloader, DownloadVersion, Reporter},
+};
 use pbr::ProgressBar;
 
 struct ProgressTrack {
@@ -35,6 +38,8 @@ fn main() {
                     &PathBuf::from(path),
                     None,
                     None,
+                    Some(Launcher::Fabric),
+                    Some("0.16.14"),
                     Some(Arc::new(Mutex::new(ProgressTrack::default()))),
                 )
                 .unwrap();

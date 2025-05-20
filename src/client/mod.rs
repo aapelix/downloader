@@ -45,8 +45,17 @@ pub trait DownloadVersion {
         _game_path: &PathBuf,
         _manifest_path: Option<&PathBuf>,
         _version_path: Option<&PathBuf>,
+        _launcher: Option<Launcher>,
+        _launcher_id: Option<&str>,
         _progress: Option<Progress>,
     ) -> Result<Vec<DownloadResult>, ClientDownloaderError>;
+
+    fn setup_fabric(
+        &self,
+        _version_id: &str,
+        _launcher_id: &str,
+        _base_manifest: &mut Manifest,
+    ) -> Result<Manifest, ClientDownloaderError>;
 
     fn create_profiles_json(&self, _game_path: &PathBuf) -> Result<(), ClientDownloaderError>;
 

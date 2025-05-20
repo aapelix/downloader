@@ -61,6 +61,15 @@ pub struct ManifestLibrary {
     pub rules: Option<Vec<ManifestRule>>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all(deserialize = "camelCase"))]
+pub struct FabricManifestLibrary {
+    pub name: String,
+    pub url: String,
+    pub sha1: Option<String>,
+    pub size: Option<u64>,
+}
+
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum VersionType {
@@ -86,6 +95,73 @@ pub struct Manifest {
     pub time: String,
     #[serde(rename = "type")]
     pub type_: VersionType,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all(deserialize = "camelCase"))]
+pub struct FabricManifest {
+    pub inherits_from: String,
+    pub id: String,
+    pub libraries: Vec<FabricManifestLibrary>,
+    pub main_class: String,
+    pub release_time: String,
+    pub time: String,
+    #[serde(rename = "type")]
+    pub type_: VersionType,
+}
+
+fn maven_to_path(coordinate: &str) -> String {
+    let parts: Vec<&str> = coordinate.split(':').collect();
+    if parts.len() != 3 {
+        panic!("Invalid format");
+    }
+    let group = parts[0].replace('.', "/");
+    let artifact = parts[1];
+    let version = parts[2];
+    format!(
+        "{}/{}/{}/{}/{}-{}.jar",
+        group, artifact, version, artifact, artifact, version
+    )
+}
+
+pub fn manifest_from_fabric(
+    fabric_manifest: FabricManifest,
+    base_manifest: &mut Manifest,
+) -> Result<Manifest, ManifestError> {
+    let fabric_libraries: Vec<ManifestLibrary> = fabric_manifest
+        .libraries
+        .into_iter()
+        .map(|lib| {
+            let path = maven_to_path(&lib.name.clone());
+            let sha1 = lib.sha1.unwrap_or_else(|| "".to_string());
+            let size = lib.size.unwrap_or(1_i64 as u64);
+
+            ManifestLibrary {
+                name: lib.name.clone(),
+                downloads: ManifestLibraryDownloads {
+                    artifact: Some(ManifestFile {
+                        path: Some(path),
+                        sha1: sha1,
+                        size: size,
+                        url: format!("{}{}", lib.url, maven_to_path(&lib.name)),
+                    }),
+                },
+                rules: None,
+            }
+        })
+        .collect();
+
+    let mut combined_libraries = fabric_libraries;
+    combined_libraries.extend(base_manifest.libraries.clone());
+
+    Ok(Manifest {
+        libraries: combined_libraries,
+        main_class: fabric_manifest.main_class,
+        release_time: fabric_manifest.release_time,
+        time: fabric_manifest.time,
+        type_: fabric_manifest.type_,
+        ..base_manifest.clone()
+    })
 }
 
 pub fn read_manifest_from_str(string: &str) -> Result<Manifest, ManifestError> {
